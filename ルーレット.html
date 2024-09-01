@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カスタム文字列付きルーレット</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #rouletteContainer {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 5px solid #000;
+            border-radius: 50%;
+        }
+        #pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #333;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="textInput" rows="4" cols="30" placeholder="ルーレットに表示する文字列を入力してください（改行で区切ってください）" style="margin-bottom: 20px;"></textarea>
+    <button onclick="drawRouletteFromInput()">ルーレットを更新</button>
+    <div id="rouletteContainer">
+        <div id="pointer"></div>
+        <canvas id="roulette" width="300" height="300"></canvas>
+    </div>
+    <button onclick="spin()">Spin!</button>
+
+    <script>
+        const canvas = document.getElementById('roulette');
+        const ctx = canvas.getContext('2d');
+        const radius = canvas.width / 2;
+        let segments = []; // セグメントの文字列リスト
+        const colors = ['#FF6347', '#FFA500', '#FFFF00', '#ADFF2F', '#00FF00', '#00FA9A', '#00CED1', '#1E90FF', '#8A2BE2', '#FF69B4'];
+
+        // ルーレットを描画
+        function drawRoulette() {
+            const segmentAngle = 2 * Math.PI / segments.length; // 各セグメントの角度
+
+            for (let i = 0; i < segments.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, i * segmentAngle, (i + 1) * segmentAngle);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.closePath();
+
+                // 文字列を描画
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(i * segmentAngle + segmentAngle / 2);
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(segments[i], radius * 0.7, 10);
+                ctx.restore();
+            }
+        }
+
+        // 入力テキストからルーレットを描画
+        function drawRouletteFromInput() {
+            const textInput = document.getElementById('textInput').value;
+            segments = textInput.split('\n').filter(segment => segment.trim() !== '');
+            if (segments.length === 0) {
+                alert('少なくとも一つの文字列を入力してください。');
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRoulette();
+        }
+
+        // ルーレットを回転させる
+        function spin() {
+            const totalRotation = 3600; // 回転する総度数
+            const randomRotation = Math.floor(Math.random() * 360); // 追加のランダムな回転
+            const finalRotation = totalRotation + randomRotation;
+            const startTime = performance.now();
+            const duration = 4000; // 回転にかける時間
+
+            function easeOutQuad(t) {
+                return t * (2 - t); // イージング関数
+            }
+
+            function animate(time) {
+                const elapsedTime = time - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                const easedProgress = easeOutQuad(progress);
+                const currentRotation = finalRotation * easedProgress;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate((currentRotation * Math.PI) / 180);
+                ctx.translate(-radius, -radius);
+                drawRoulette();
+                ctx.restore();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 初期描画
+        drawRouletteFromInput();
+    </script>
+</body>
+</html>
